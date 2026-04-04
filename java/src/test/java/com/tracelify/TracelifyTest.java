@@ -3,7 +3,7 @@ package com.tracelify;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Test {
+public class TracelifyTest {
     public static void main(String[] args) {
         Tracelify sdk = new Tracelify(
             "http://demo_key@localhost:8000/project/2/events",
