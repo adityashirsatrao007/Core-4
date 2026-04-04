@@ -9,8 +9,12 @@ import { lazy, Suspense } from "react";
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 
 import ProtectedRoute from "./ProtectedRoute";
+import PublicOnlyRoute from "./PublicOnlyRoute";
 import MainLayout from "@/layouts/MainLayout";
 import AuthLayout from "@/layouts/AuthLayout";
+
+// Landing page
+import Landing from "@/pages/Landing";
 
 // ── Auth pages (always needed at startup — not lazy) ─────────────────────────
 import Login from "@/pages/auth/Login";
@@ -51,6 +55,9 @@ function PageSkeleton() {
 }
 
 const router = createBrowserRouter([
+  // ── Landing page — public, redirect to dashboard if already logged in ──────
+  { path: "/", element: <PublicOnlyRoute><Landing /></PublicOnlyRoute> },
+
   // ── Public auth routes ────────────────────────────────────────────────────
   {
     element: <AuthLayout />,
@@ -70,24 +77,17 @@ const router = createBrowserRouter([
       {
         element: <MainLayout />,
         children: [
+          // Root redirect
           { path: "/", element: <Navigate to="/dashboard" replace /> },
 
-          {
-            path: "/dashboard",
-            element: <Suspense fallback={<PageSkeleton />}><Dashboard /></Suspense>,
-          },
-          {
-            path: "/orgs/:orgId/projects",
-            element: <Suspense fallback={<PageSkeleton />}><Projects /></Suspense>,
-          },
-          {
-            path: "/orgs/:orgId/projects/:projectId",
-            element: <Suspense fallback={<PageSkeleton />}><ProjectDetails /></Suspense>,
-          },
-          {
-            path: "/orgs/:orgId/projects/:projectId/docs",
-            element: <Suspense fallback={<PageSkeleton />}><DocsPage /></Suspense>,
-          },
+          // Dashboard
+          { path: "/dashboard", element: <Dashboard /> },
+
+          // Projects — scoped under org
+          { path: "/orgs/:orgId/projects", element: <Projects /> },
+          { path: "/orgs/:orgId/projects/:projectId", element: <ProjectDetails /> },
+
+          // Issues — scoped under project
           {
             path: "/orgs/:orgId/projects/:projectId/issues",
             element: <Suspense fallback={<PageSkeleton />}><ErrorsList /></Suspense>,
