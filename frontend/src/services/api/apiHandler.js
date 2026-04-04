@@ -32,13 +32,24 @@ export const orgsApi = {
   /** GET /orgs/:id → OrgOut */
   getOrg: (orgId) => apiClient.get(`/orgs/${orgId}`).then((r) => r.data),
 
-  /** GET /orgs/:id/members → MemberOut[] */
+  /** GET /orgs/:id/members → MemberOut[] (includes user_name, user_email) */
   listMembers: (orgId) =>
     apiClient.get(`/orgs/${orgId}/members`).then((r) => r.data),
 
   /** POST /orgs/:id/members — { email, role } → MemberOut */
   addMember: (orgId, data) =>
     apiClient.post(`/orgs/${orgId}/members`, data).then((r) => r.data),
+
+  /** GET /orgs/:id/my-role → { org_id, role } */
+  getMyRole: (orgId) =>
+    apiClient.get(`/orgs/${orgId}/my-role`).then((r) => r.data),
+
+  /** PATCH /orgs/:id — { name } → OrgOut */
+  renameOrg: (orgId, name) =>
+    apiClient.patch(`/orgs/${orgId}`, { name }).then((r) => r.data),
+
+  /** DELETE /orgs/:id */
+  deleteOrg: (orgId) => apiClient.delete(`/orgs/${orgId}`),
 };
 
 /**
@@ -67,6 +78,13 @@ export const projectsApi = {
     apiClient
       .post(`/projects/${projectId}/dsn`, null, { params: { label } })
       .then((r) => r.data),
+
+  /** PATCH /projects/:id — { name } → ProjectOut */
+  renameProject: (projectId, name) =>
+    apiClient.patch(`/projects/${projectId}`, { name }).then((r) => r.data),
+
+  /** DELETE /projects/:id */
+  deleteProject: (projectId) => apiClient.delete(`/projects/${projectId}`),
 };
 
 /**

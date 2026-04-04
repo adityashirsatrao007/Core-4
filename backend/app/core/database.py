@@ -11,15 +11,18 @@ from loguru import logger
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=settings.DEBUG,
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    pool_recycle=300,
+    pool_size=10,          # 10 persistent connections (was 5)
+    max_overflow=20,       # up to 30 total under burst (was 10)
+    pool_pre_ping=True,    # detect dead connections before use
+    pool_recycle=300,      # recycle idle connections every 5 min
+    pool_timeout=10,       # fail fast if pool exhausted (was infinite)
     connect_args={
         # ssl=require is already in DATABASE_URL query string — asyncpg picks it up.
-        # statement/prepared cache must be 0 for Neon's PgBouncer pooler.
+        # statement/prepared cache must be 0 for Neon’s PgBouncer pooler.
         "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
+        # Reduce TCP connect timeout from default 60s
+        "timeout": 10,
     },
 )
 

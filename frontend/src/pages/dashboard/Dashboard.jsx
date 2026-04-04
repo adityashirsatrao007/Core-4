@@ -9,7 +9,7 @@ import {
   Shield,
   Layers,
   ChevronRight,
-  Clock,
+  Crown,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFetch } from "@/hooks/useFetch";
@@ -316,7 +316,7 @@ function OrgPanel({ org }) {
 
 /* ─── Dashboard ────────────────────────────────────────────────────────────── */
 export default function Dashboard() {
-  const { user, activeOrg, setActiveOrg } = useAuth();
+  const { user, activeOrg, setActiveOrg, userRole, isOwnerOrAdmin } = useAuth();
   const navigate = useNavigate();
 
   const { data: orgs = [], isLoading: orgsLoading } = useFetch(
@@ -419,6 +419,18 @@ export default function Dashboard() {
                     </div>
                     <span className="text-[13px] font-semibold text-slate-200">{displayOrg.name}</span>
                     <span className="text-[11px] text-slate-600">/{displayOrg.slug}</span>
+                    {/* Role chip */}
+                    {userRole && (
+                      <span className={cn(
+                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize",
+                        userRole === "owner"  && "bg-amber-500/10 border-amber-500/20 text-amber-400",
+                        userRole === "admin"  && "bg-blue-500/10 border-blue-500/20 text-blue-400",
+                        userRole === "member" && "bg-slate-500/10 border-slate-500/20 text-slate-400",
+                      )}>
+                        {userRole === "owner" && <Crown className="h-2.5 w-2.5" />}
+                        {userRole}
+                      </span>
+                    )}
                   </div>
                   <button
                     onClick={() => navigate(`/orgs/${displayOrg.id}/projects`)}
@@ -475,18 +487,23 @@ export default function Dashboard() {
                     label: "New Project",
                     icon: FolderKanban,
                     onClick: () => navigate(`/orgs/${displayOrg?.id}/projects`),
+                    show: true,
                   },
                   {
                     label: "View Issues",
                     icon: AlertCircle,
                     onClick: () => navigate(`/orgs/${displayOrg?.id}/projects`),
+                    show: true,
                   },
                   {
                     label: "Manage Team",
                     icon: Shield,
                     onClick: () => navigate("/settings"),
+                    show: isOwnerOrAdmin,
                   },
-                ].map((action) => (
+                ]
+                  .filter((a) => a.show)
+                  .map((action) => (
                   <button
                     key={action.label}
                     onClick={action.onClick}

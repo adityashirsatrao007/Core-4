@@ -36,3 +36,11 @@ class MemberOut(BaseModel):
     user_id: uuid.UUID
     role: str
     joined_at: datetime
+    # Enriched from User table — may be None for legacy rows
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
+
+
+class MyRoleOut(BaseModel):
+    org_id: uuid.UUID
+    role: str  # owner | admin | member | none

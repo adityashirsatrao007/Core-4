@@ -199,3 +199,55 @@ async def create_dsn_key(
         created_at=key.created_at,
         dsn=key.dsn,
     )
+
+
+# ── Rename project ─────────────────────────────────────────────────────────────
+
+@router.patch(
+    "/projects/{project_id}",
+    response_model=ProjectOut,
+    summary="Rename a project",
+)
+async def rename_project(
+    project_id: uuid.UUID,
+    body: dict,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    await _assert_org_member(db, project.org_id, current_user.id)
+
+    new_name = body.get("name", "").strip()
+    if not new_name:
+        raise HTTPException(status_code=422, detail="Name cannot be empty")
+
+    project.name = new_name
+    await db.flush()
+    return ProjectOut.model_validate(project)
+
+
+# ── Delete project ─────────────────────────────────────────────────────────────
+
+@router.delete(
+    "/projects/{project_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a project and all its data",
+)
+async def delete_project(
+    project_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Project).where(Project.id == project_id))
+    project = result.scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    await _assert_org_member(db, project.org_id, current_user.id)
+    await db.delete(project)
+    await db.flush()
+

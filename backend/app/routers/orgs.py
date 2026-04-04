@@ -4,7 +4,8 @@ Organization routes:
   GET  /orgs/                        — list my orgs
   GET  /orgs/{org_id}                — get org detail
   POST /orgs/{org_id}/members        — add member
-  GET  /orgs/{org_id}/members        — list members
+  GET  /orgs/{org_id}/members        — list members (with user name + email)
+  GET  /orgs/{org_id}/my-role        — get current user's role in this org
 """
 import uuid
 import re
@@ -16,7 +17,7 @@ from app.core.database import get_db
 from app.core.deps import CurrentUser
 from app.models.org import Organization, OrganizationMember
 from app.models.user import User
-from app.schemas.org import CreateOrgRequest, OrgOut, MemberOut, AddMemberRequest
+from app.schemas.org import CreateOrgRequest, OrgOut, MemberOut, AddMemberRequest, MyRoleOut
 
 router = APIRouter(prefix="/orgs", tags=["Organizations"])
 
@@ -155,7 +156,7 @@ async def add_member(
 @router.get(
     "/{org_id}/members",
     response_model=list[MemberOut],
-    summary="List org members",
+    summary="List org members (with user name + email)",
 )
 async def list_members(
     org_id: uuid.UUID,
@@ -172,8 +173,103 @@ async def list_members(
     if not m_result.scalar_one_or_none():
         raise HTTPException(status_code=403, detail="Not a member")
 
+    # JOIN with User to get name + email
     result = await db.execute(
-        select(OrganizationMember).where(OrganizationMember.org_id == org_id)
+        select(OrganizationMember, User)
+        .join(User, User.id == OrganizationMember.user_id)
+        .where(OrganizationMember.org_id == org_id)
     )
-    members = result.scalars().all()
-    return [MemberOut.model_validate(m) for m in members]
+    rows = result.all()
+
+    out = []
+    for membership, user in rows:
+        out.append(
+            MemberOut(
+                id=membership.id,
+                org_id=membership.org_id,
+                user_id=membership.user_id,
+                role=membership.role,
+                joined_at=membership.joined_at,
+                user_name=user.name,
+                user_email=user.email,
+            )
+        )
+    return out
+
+
+@router.get(
+    "/{org_id}/my-role",
+    response_model=MyRoleOut,
+    summary="Get current user's role in this org",
+)
+async def get_my_role(
+    org_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(OrganizationMember).where(
+            OrganizationMember.org_id == org_id,
+            OrganizationMember.user_id == current_user.id,
+        )
+    )
+    membership = result.scalar_one_or_none()
+    if not membership:
+        raise HTTPException(status_code=403, detail="Not a member of this organization")
+    return MyRoleOut(org_id=org_id, role=membership.role)
+
+
+# ── Rename org ─────────────────────────────────────────────────────────────────
+
+@router.patch(
+    "/{org_id}",
+    response_model=OrgOut,
+    summary="Rename an organization",
+)
+async def rename_org(
+    org_id: uuid.UUID,
+    body: dict,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Organization).where(Organization.id == org_id))
+    org = result.scalar_one_or_none()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    # Only owner can rename
+    if org.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the owner can rename this organization")
+
+    new_name = body.get("name", "").strip()
+    if not new_name:
+        raise HTTPException(status_code=422, detail="Name cannot be empty")
+
+    org.name = new_name
+    await db.flush()
+    return OrgOut.model_validate(org)
+
+
+# ── Delete org ─────────────────────────────────────────────────────────────────
+
+@router.delete(
+    "/{org_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete an organization (owner only)",
+)
+async def delete_org(
+    org_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Organization).where(Organization.id == org_id))
+    org = result.scalar_one_or_none()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if org.owner_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Only the owner can delete this organization")
+
+    await db.delete(org)
+    await db.flush()
+

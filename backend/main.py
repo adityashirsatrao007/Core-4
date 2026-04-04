@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from loguru import logger
 
 from app.core.config import settings
@@ -95,6 +96,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── GZip — compress JSON responses 60-80% (min 500 bytes) ────────────────────
+app.add_middleware(GZipMiddleware, minimum_size=500)
 
 
 # ── Routers ────────────────────────────────────────────────────────────────────

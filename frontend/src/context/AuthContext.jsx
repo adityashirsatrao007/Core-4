@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { authApi } from "@/services/api/apiHandler";
+import { authApi, orgsApi } from "@/services/api/apiHandler";
 import { TOKEN_STORAGE_KEY, ORG_STORAGE_KEY } from "@/utils/constants";
 
 const USER_STORAGE_KEY = "tracelify_user_cache";
@@ -37,6 +37,9 @@ export function AuthProvider({ children }) {
     }
   });
 
+  // Role of the current user in the activeOrg (owner | admin | member | null)
+  const [userRole, setUserRole] = useState(null);
+
   // isLoading = true only when we have a token but NO cached user (first ever load)
   const [isLoading, setIsLoading] = useState(() => {
     const hasToken = !!localStorage.getItem(TOKEN_STORAGE_KEY);
@@ -70,6 +73,17 @@ export function AuthProvider({ children }) {
     hydrateUser(token);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fetch role whenever activeOrg changes
+  useEffect(() => {
+    if (!activeOrg?.id || !token) {
+      setUserRole(null);
+      return;
+    }
+    orgsApi.getMyRole(activeOrg.id)
+      .then((data) => setUserRole(data.role))
+      .catch(() => setUserRole(null));
+  }, [activeOrg?.id, token]); // eslint-disable-line react-hooks/exhaustive-deps
+
   /** Email/password login — store token + user immediately */
   const login = useCallback(async (accessToken, userData) => {
     localStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
@@ -99,6 +113,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
     setActiveOrgState(null);
+    setUserRole(null);
     window.location.href = "/login";
   }, []);
 
@@ -112,8 +127,11 @@ export function AuthProvider({ children }) {
     user,
     token,
     activeOrg,
+    userRole,
     isLoading,
     isAuthenticated: !!user,
+    /** Helpers */
+    isOwnerOrAdmin: userRole === "owner" || userRole === "admin",
     login,
     loginWithToken,
     logout,

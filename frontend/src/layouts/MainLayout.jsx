@@ -10,6 +10,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
+  Book,
+  Crown,
+  ShieldCheck,
+  UserCheck,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useFetch } from "@/hooks/useFetch";
@@ -18,7 +22,7 @@ import { QUERY_KEYS } from "@/utils/constants";
 import { cn, getInitials } from "@/utils/helpers";
 
 export default function MainLayout() {
-  const { user, activeOrg, setActiveOrg, logout } = useAuth();
+  const { user, activeOrg, setActiveOrg, logout, userRole } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [orgOpen, setOrgOpen] = useState(false);
@@ -52,6 +56,7 @@ export default function MainLayout() {
     ...(activeOrg
       ? [{ label: "Projects", icon: FolderKanban, to: `/orgs/${activeOrg.id}/projects` }]
       : []),
+    { label: "Docs", icon: Book, to: "/docs" },
     { label: "Settings", icon: Settings, to: "/settings" },
   ];
 
@@ -206,10 +211,19 @@ export default function MainLayout() {
                 <p className="truncate text-[11px] font-medium text-slate-300 leading-tight">
                   {user?.name || user?.email}
                 </p>
-                {user?.name && (
-                  <p className="truncate text-[10px] text-slate-600 leading-tight mt-0.5">
-                    {user.email}
-                  </p>
+                {/* Role badge */}
+                {userRole && (
+                  <span className={cn(
+                    "inline-flex items-center gap-0.5 text-[9px] font-semibold capitalize leading-tight",
+                    userRole === "owner"  && "text-amber-400",
+                    userRole === "admin"  && "text-blue-400",
+                    userRole === "member" && "text-slate-500",
+                  )}>
+                    {userRole === "owner"  && <Crown      className="h-2 w-2" />}
+                    {userRole === "admin"  && <ShieldCheck className="h-2 w-2" />}
+                    {userRole === "member" && <UserCheck   className="h-2 w-2" />}
+                    {userRole}
+                  </span>
                 )}
               </div>
               <button
