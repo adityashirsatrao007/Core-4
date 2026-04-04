@@ -4,16 +4,15 @@ import { Terminal, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "Documentation", href: "#docs" },
-  { label: "Changelog", href: "#changelog" },
-  { label: "Security", href: "#security" },
+  { label: "Features", href: "/#features" },
+  { label: "Documentation", href: "/docs" },
+  { label: "Changelog", href: "/#changelog" },
+  { label: "Security", href: "/#security" },
 ]
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [activeLink, setActiveLink] = useState("Features")
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -44,28 +43,22 @@ export default function Navbar() {
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-1 font-headline text-sm tracking-tight">
           {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              onClick={() => setActiveLink(link.label)}
-              className={cn(
-                "px-4 py-2 rounded-lg transition-all duration-200",
-                activeLink === link.label
-                  ? "text-primary bg-primary/5"
-                  : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
-              )}
-            >
-              {link.label}
-            </a>
+             <a
+                key={link.label}
+                href={link.href}
+                className="px-4 py-2 rounded-lg transition-all duration-200 text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+             >
+                {link.label}
+             </a>
           ))}
         </div>
 
         {/* CTA */}
         <div className="hidden md:flex items-center gap-3">
-          <a href="#" className="text-sm text-on-surface-variant hover:text-on-surface transition-colors font-headline">
+          <a href="/login" className="text-sm text-on-surface-variant hover:text-on-surface transition-colors font-headline">
             Sign in
           </a>
-          <Button size="default" className="text-sm px-5 py-2">
+          <Button size="default" className="text-sm px-5 py-2" onClick={() => window.location.href = '/dashboard'}>
             Launch Console
           </Button>
         </div>
@@ -92,15 +85,15 @@ export default function Navbar() {
             <a
               key={link.label}
               href={link.href}
-              onClick={() => { setActiveLink(link.label); setMobileOpen(false) }}
+              onClick={() => { setMobileOpen(false) }}
               className="px-4 py-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all font-headline text-sm"
             >
               {link.label}
             </a>
           ))}
           <div className="pt-3 mt-2 border-t border-outline-variant/10 flex flex-col gap-2">
-            <a href="#" className="px-4 py-3 text-sm text-on-surface-variant font-headline">Sign in</a>
-            <Button size="default" className="w-full">Launch Console</Button>
+            <a href="/login" className="px-4 py-3 text-sm text-on-surface-variant font-headline">Sign in</a>
+            <Button size="default" className="w-full" onClick={() => window.location.href = '/dashboard'}>Launch Console</Button>
           </div>
         </div>
       </div>

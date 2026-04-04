@@ -1,8 +1,9 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import errorVizImg from "../assets/error_tracking_viz.png"
 
-const ERROR_VIZ = "https://lh3.googleusercontent.com/aida-public/AB6AXuDcFN0mXtzudtzE22nbUyjvKuPK5JII_lhjQQjOtS-FEeZe2V1OLIVcgti_yt9vx8fuIrBTWx-9-ngamwIDCoao4Hxkj1dPvllpJrO1xvM-gDR5Re3Th5Y6kZIFdsph4Vq8BlYWnCwQyWXlyFffZ6JfSL5G7gPT7rL4U5sUbjsjieLo-iLQyaliyR2OixF6aM4t5SlsxRwsqFCEaA7s9rGPwfepjnUYEKimdplnIGk24yx6IQjdwnjC2KHpD0w2a2rKytvfhOtHOi2c"
+const ERROR_VIZ = errorVizImg
 
 const features = [
   {
@@ -137,7 +138,7 @@ export default function FeaturesSection() {
                     {f.icon}
                   </span>
                   <h3 className="text-2xl md:text-3xl font-headline font-bold mb-3">{f.title}</h3>
-                  <p className="text-on-surface-variant max-w-md leading-relaxed">{f.description}</p>
+                  <p className={cn("text-on-surface-variant max-w-md leading-relaxed", f.hasChart && "mb-16")}>{f.description}</p>
                 </div>
                 {f.hasAIPanel && <AIPanel />}
               </div>
