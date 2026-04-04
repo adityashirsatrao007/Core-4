@@ -1,11 +1,11 @@
-from usersdk.client import Tracelify
+from user_sdk.client import Tracelify
 
 sdk = Tracelify(
     dsn="http://demo_key@localhost:8000/project/2/events"
 )
 
 sdk.set_user({"id": "user_101"})
-sdk.set_tag("env", "dev")
+sdk.set_tag("env", "Production")
 
 sdk.add_breadcrumb("App started")
 sdk.add_breadcrumb("User clicked button")

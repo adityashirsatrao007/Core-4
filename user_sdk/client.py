@@ -27,14 +27,26 @@ class Tracelify:
 
         if stacktrace is None:
             tb = getattr(error, "__traceback__", None)
+
             if tb is not None:
                 stacktrace = traceback.format_exception(type(error), error, tb)
             else:
-                stacktrace = []
+                stacktrace = traceback.format_stack()
+
+        # ✅ FIX 1: convert list → string
+        if isinstance(stacktrace, list):
+            stacktrace = "".join(stacktrace)
+
+        # ✅ FIX 2: fallback if empty
+        if not stacktrace:
+            stacktrace = "No stacktrace available"
 
         event = {
             "project_id": self.config.project_id,
             "timestamp": get_timestamp(),
+            "client": {              
+            "sdk": "tracelify.python"
+            },
             "error": {
                 "type": type(error).__name__,
                 "message": str(error),
