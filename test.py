@@ -10,7 +10,7 @@ from tracelify.client import Tracelify
 # ─────────────────────────────────────────────────────────────────────────────
 
 sdk = Tracelify(
-    dsn="http://3ec45a813107df3076d004236eb4ab64@localhost:8000/api/1c582c46-5b1e-4b73-bb73-10c819ff41d0/events",
+    dsn="http://28ebebe34a006d9d0d1562416c8040de@localhost:8000/api/89433c10-b28a-4516-bfbb-5011f5ef7208/events",
     release="1.0.0"
 )
 
