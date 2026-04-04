@@ -13,7 +13,7 @@ from app.core.redis import get_redis_pool, close_redis_pool
 # Import all models so SQLAlchemy sees them before create_all()
 import app.models  # noqa: F401
 
-from app.routers import auth, orgs, projects, events, issues
+from app.routers import auth, orgs, projects, events, issues, report
 from app.worker.worker import run_worker
 
 @asynccontextmanager
@@ -69,6 +69,7 @@ Production-grade error tracking system (Sentry-like) built with FastAPI.
 - **Event Ingest** — SDK posts errors → validated → queued → stored
 - **Issue Grouping** — smart fingerprinting groups related errors
 - **Alerts** — event count thresholds, new issue triggers, email/webhook
+- **LLM Reports** — AI-powered project health reports via Amazon Nova Pro
 
 ### SDK DSN format
 ```
@@ -108,6 +109,7 @@ app.include_router(orgs.router)
 app.include_router(projects.router)
 app.include_router(events.router)
 app.include_router(issues.router)
+app.include_router(report.router)
 
 
 # ── Health check ───────────────────────────────────────────────────────────────
