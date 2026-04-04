@@ -4,7 +4,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Loader2, AlertCircle, ArrowRight, Book, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { projectsApi } from "@/services/api/apiHandler";
-import { reportApi } from "@/services/api/apiHandler";
 import { useFetch } from "@/hooks/useFetch";
 import { useAuth } from "@/hooks/useAuth";
 import { QUERY_KEYS, PLATFORMS } from "@/utils/constants";
@@ -111,8 +110,6 @@ export default function Projects() {
   const { isOwnerOrAdmin } = useAuth();
 
   const [showCreate, setShowCreate] = useState(false);
-  const [showReport, setShowReport] = useState(false);
-  const [reportResult, setReportResult] = useState(null);
   
   const [form, setForm] = useState({ name: "", slug: "", platform: "python" });
   const [formError, setFormError] = useState("");
@@ -146,20 +143,6 @@ export default function Projects() {
     createMutation.mutate(form);
   };
 
-  const generateReportMutation = useMutation({
-    mutationFn: () => reportApi.generate(),
-    onSuccess: (data) => setReportResult(data),
-    onError: (err) => {
-      setReportResult({ error: err.response?.data?.detail || "Failed to generate report." });
-    },
-  });
-
-  const handleGenerateReport = () => {
-    setShowReport(true);
-    setReportResult(null);
-    generateReportMutation.mutate();
-  };
-
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
@@ -169,15 +152,6 @@ export default function Projects() {
         actions={
           isOwnerOrAdmin && (
             <div className="flex items-center gap-3">
-              <button
-                id="btn-generate-report"
-                onClick={handleGenerateReport}
-                className="flex items-center gap-2 rounded-xl bg-slate-800 border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700 hover:border-slate-600 transition-colors"
-                title="Generate AI Health Report"
-              >
-                <Sparkles className="h-4 w-4 text-emerald-400" />
-                Generate Report
-              </button>
               <button
                 id="btn-new-project"
                 onClick={() => { setFormError(""); setShowCreate(true); }}
@@ -248,50 +222,6 @@ export default function Projects() {
             </button>
           </div>
         </form>
-      </Modal>
-
-      {/* ── AI Report Modal ── */}
-      <Modal
-        open={showReport}
-        onClose={() => setShowReport(false)}
-        title="AI System Health Report"
-        maxWidth="max-w-2xl"
-      >
-        <div className="space-y-4">
-          {!reportResult && generateReportMutation.isPending && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Loader2 className="h-8 w-8 animate-spin text-emerald-400 mb-4" />
-              <p className="text-slate-300 font-medium">Generating intelligent report...</p>
-              <p className="text-sm text-slate-500 mt-1">This might take 15-30 seconds because we are gathering data across all your projects.</p>
-            </div>
-          )}
-
-          {reportResult?.error && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-5 text-red-400">
-              <div className="flex items-center gap-2 font-semibold mb-2">
-                <AlertCircle className="h-5 w-5" />
-                Report Generation Failed
-              </div>
-              <p className="text-sm">{reportResult.error}</p>
-            </div>
-          )}
-
-          {reportResult?.full_report && (
-            <>
-              <div className="prose prose-invert prose-emerald max-w-none text-sm bg-slate-800/50 p-6 rounded-xl border border-slate-700/60 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <ReactMarkdown>{reportResult.full_report}</ReactMarkdown>
-              </div>
-              <div className="flex justify-end pt-2">
-                <button
-                  onClick={() => setShowReport(false)}
-                  className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors"
-                >
-                  Done
-                </button>
-              </div>
-            </>
-          )}
-        </div>
       </Modal>
 
       {/* ── Project grid ── */}

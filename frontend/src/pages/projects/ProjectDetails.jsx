@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle, Copy, Check, Plus, Loader2, Key, Book,
-  MoreVertical, Pencil, Trash2, X, Sparkles
+  MoreVertical, Pencil, Trash2, X, Sparkles, Download
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { projectsApi, reportApi } from "@/services/api/apiHandler";
 import { useFetch } from "@/hooks/useFetch";
 import { QUERY_KEYS } from "@/utils/constants";
@@ -132,7 +133,7 @@ export default function ProjectDetails() {
   });
 
   const generateReportMutation = useMutation({
-    mutationFn: () => reportApi.generate(),
+    mutationFn: () => reportApi.generateProjectReport(projectId),
     onSuccess: (data) => setReportResult(data),
     onError: (err) => {
       setReportResult({ error: err.response?.data?.detail || "Failed to generate AI report." });
@@ -143,6 +144,19 @@ export default function ProjectDetails() {
     setShowReport(true);
     setReportResult(null);
     generateReportMutation.mutate();
+  };
+
+  const handleDownloadReport = () => {
+    if (!reportResult?.full_report) return;
+    const blob = new Blob([reportResult.full_report], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `tracelify_health_report_${project?.slug || "project"}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleCopy = async (text, id) => {
@@ -331,8 +345,8 @@ export default function ProjectDetails() {
           {!reportResult && generateReportMutation.isPending && (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-emerald-400 mb-4" />
-              <p className="text-slate-300 font-medium">Generating intelligent report...</p>
-              <p className="text-sm text-slate-500 mt-1">This might take 15-30 seconds because we are gathering data across all your projects.</p>
+              <p className="text-slate-300 font-medium">Generating project-specific report...</p>
+              <p className="text-sm text-slate-500 mt-1">Analyzing database records for this project...</p>
             </div>
           )}
 
@@ -349,9 +363,16 @@ export default function ProjectDetails() {
           {reportResult?.full_report && (
             <>
               <div className="prose prose-invert prose-emerald max-w-none text-sm bg-slate-800/50 p-6 rounded-xl border border-slate-700/60 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                <ReactMarkdown>{reportResult.full_report}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{reportResult.full_report}</ReactMarkdown>
               </div>
-              <div className="flex justify-end pt-2">
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  onClick={handleDownloadReport}
+                  className="flex items-center gap-2 rounded-xl bg-slate-800 border border-slate-700 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-700 hover:border-slate-600 transition-colors"
+                >
+                  <Download className="h-4 w-4" />
+                  Download Report
+                </button>
                 <button
                   onClick={() => setShowReport(false)}
                   className="rounded-xl bg-emerald-600 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition-colors"
