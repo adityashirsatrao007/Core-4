@@ -4,25 +4,31 @@ from urllib.parse import urlparse
 class Config:
     def __init__(self, dsn, release):
         """
-        Parse DSN format: http://<public_key>@<host>:<port>/api/<project_id>/events
-        Example: http://abc123@localhost:8000/api/550e8400-e29b.../events
+        Parse DSN formats:
+          http://<public_key>@<host>:<port>/api/<project_id>/events   ← backend-generated
+          http://<public_key>@<host>:<port>/api/<project_id>           ← short form
+          http://<public_key>@<host>:<port>/<project_id>               ← legacy
+
+        Example:
+          http://abc123@localhost:8000/api/550e8400-e29b-41d4-a716-.../events
         """
         parsed = urlparse(dsn)
 
-        self.protocol = parsed.scheme
-        self.host = parsed.hostname
+        self.protocol = parsed.scheme or "http"
+        self.host = parsed.hostname or "localhost"
         self.port = parsed.port or 8000
         self.public_key = parsed.username or "demo_key"
 
-        # Path: /api/<project_id>/events → parts: ['api', '<project_id>', 'events']
-        path_parts = parsed.path.strip("/").split("/")
-        if len(path_parts) >= 2 and path_parts[0] in ("api", "project"):
-            self.project_id = path_parts[1]
-        elif len(path_parts) >= 1:
-            self.project_id = path_parts[0]
-        else:
-            self.project_id = "unknown"
+        # Path: /api/<project_id>/events  → strip leading slash, split
+        path_parts = [p for p in parsed.path.strip("/").split("/") if p]
 
+        # Drop "api" prefix and "events" suffix if present
+        if path_parts and path_parts[0] == "api":
+            path_parts = path_parts[1:]
+        if path_parts and path_parts[-1] == "events":
+            path_parts = path_parts[:-1]
+
+        self.project_id = path_parts[0] if path_parts else "unknown"
         self.release = release
 
     def get_endpoint(self) -> str:
