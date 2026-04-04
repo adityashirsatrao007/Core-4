@@ -1,0 +1,128 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after {
+    border-color: #484555;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #170e2b;
+    color: #eaddff;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+    min-height: max(884px, 100dvh);
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: #cabeff;
+    color: #30009a;
+  }
+}
+
+@layer components {
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    display: inline-block;
+    line-height: 1;
+    text-transform: none;
+    letter-spacing: normal;
+    word-wrap: normal;
+    white-space: nowrap;
+    direction: ltr;
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+
+  .glass-panel {
+    background: rgba(46, 37, 67, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .glass-panel-light {
+    background: rgba(35, 26, 56, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .neon-glow-primary {
+    box-shadow: 0 0 20px rgba(117, 83, 255, 0.4);
+  }
+
+  .neon-glow-secondary {
+    box-shadow: 0 0 20px rgba(255, 175, 211, 0.3);
+  }
+
+  .bento-inner-glow {
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .gradient-text-primary {
+    @apply bg-gradient-to-r from-primary to-primary-container bg-clip-text text-transparent;
+  }
+
+  .gradient-text-secondary {
+    @apply bg-gradient-to-r from-secondary to-secondary-container bg-clip-text text-transparent;
+  }
+
+  .btn-primary {
+    @apply bg-gradient-to-br from-primary to-primary-container text-on-primary-container px-10 py-4 rounded-xl font-headline font-bold text-base hover:-translate-y-0.5 hover:shadow-lg transition-all duration-300;
+    box-shadow: 0 0 20px rgba(117, 83, 255, 0.4);
+  }
+
+  .btn-ghost {
+    @apply border border-outline-variant/30 text-primary px-10 py-4 rounded-xl font-headline font-bold text-base transition-all duration-300;
+    background: rgba(46, 37, 67, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .btn-ghost:hover {
+    @apply bg-surface-bright/50;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-delay-100 { animation-delay: 100ms; }
+  .animate-delay-200 { animation-delay: 200ms; }
+  .animate-delay-300 { animation-delay: 300ms; }
+  .animate-delay-400 { animation-delay: 400ms; }
+  .animate-delay-500 { animation-delay: 500ms; }
+
+  .font-headline {
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+  }
+}
