@@ -25,6 +25,7 @@ public class TracelifyTest {
             sdk.captureException(e);
         }
 
+        sdk.shutdown(); // Wait for async worker to flush before exit
         System.out.println("✅ Done");
     }
 }
