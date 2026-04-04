@@ -2,19 +2,32 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import { authApi } from "@/services/api/apiHandler";
 import { TOKEN_STORAGE_KEY, ORG_STORAGE_KEY } from "@/utils/constants";
 
-/**
- * AuthContext
- *
- * Provides: user, token, activeOrg, login, loginWithToken, logout, setActiveOrg, isLoading
- *
- * On mount: reads token from localStorage → calls GET /auth/me to hydrate user.
- * On 401: token is cleared by apiClient interceptor; user stays null.
- */
+const USER_STORAGE_KEY = "tracelify_user_cache";
+
+function readUserCache() {
+  try {
+    const raw = localStorage.getItem(USER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeUserCache(user) {
+  try {
+    if (user) localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
+    else localStorage.removeItem(USER_STORAGE_KEY);
+  } catch {}
+}
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_STORAGE_KEY));
+
+  // ── Instant render: seed from localStorage cache ──────────────────────────
+  const [user, setUser] = useState(() => (localStorage.getItem(TOKEN_STORAGE_KEY) ? readUserCache() : null));
+
   const [activeOrg, setActiveOrgState] = useState(() => {
     try {
       const stored = localStorage.getItem(ORG_STORAGE_KEY);
@@ -23,9 +36,15 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
-  const [isLoading, setIsLoading] = useState(true);
 
-  /** Hydrate user from stored token */
+  // isLoading = true only when we have a token but NO cached user (first ever load)
+  const [isLoading, setIsLoading] = useState(() => {
+    const hasToken = !!localStorage.getItem(TOKEN_STORAGE_KEY);
+    const hasCachedUser = !!readUserCache();
+    return hasToken && !hasCachedUser;
+  });
+
+  /** Hydrate / re-validate user from server in the background */
   const hydrateUser = useCallback(async (storedToken) => {
     if (!storedToken) {
       setIsLoading(false);
@@ -34,9 +53,11 @@ export function AuthProvider({ children }) {
     try {
       const me = await authApi.getMe();
       setUser(me);
+      writeUserCache(me);        // keep cache fresh for next load
     } catch {
-      // Token is invalid/expired — clear it
+      // Invalid/expired token — clear everything
       localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(USER_STORAGE_KEY);
       setToken(null);
       setUser(null);
     } finally {
@@ -44,18 +65,20 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Re-validate on mount (background — UI already shows cached data)
   useEffect(() => {
     hydrateUser(token);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /** Store token + hydrate user after email/password login */
+  /** Email/password login — store token + user immediately */
   const login = useCallback(async (accessToken, userData) => {
     localStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
     setToken(accessToken);
     setUser(userData);
+    writeUserCache(userData);
   }, []);
 
-  /** Called from OAuth callback page — receives just a token, fetches user */
+  /** OAuth callback — receive token, fetch user */
   const loginWithToken = useCallback(async (accessToken) => {
     localStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
     setToken(accessToken);
@@ -63,6 +86,7 @@ export function AuthProvider({ children }) {
     try {
       const me = await authApi.getMe();
       setUser(me);
+      writeUserCache(me);
     } finally {
       setIsLoading(false);
     }
@@ -70,6 +94,7 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
+    localStorage.removeItem(USER_STORAGE_KEY);
     localStorage.removeItem(ORG_STORAGE_KEY);
     setToken(null);
     setUser(null);
@@ -79,11 +104,8 @@ export function AuthProvider({ children }) {
 
   const setActiveOrg = useCallback((org) => {
     setActiveOrgState(org);
-    if (org) {
-      localStorage.setItem(ORG_STORAGE_KEY, JSON.stringify(org));
-    } else {
-      localStorage.removeItem(ORG_STORAGE_KEY);
-    }
+    if (org) localStorage.setItem(ORG_STORAGE_KEY, JSON.stringify(org));
+    else localStorage.removeItem(ORG_STORAGE_KEY);
   }, []);
 
   const value = {
@@ -103,9 +125,7 @@ export function AuthProvider({ children }) {
 
 export function useAuthContext() {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error("useAuthContext must be used inside <AuthProvider>");
-  }
+  if (!ctx) throw new Error("useAuthContext must be used inside <AuthProvider>");
   return ctx;
 }
 

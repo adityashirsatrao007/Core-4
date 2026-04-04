@@ -86,10 +86,12 @@ body {
 .skeleton {
   background: linear-gradient(
     90deg,
-    hsl(215 27.9% 16.9%) 25%,
-    hsl(215 27.9% 20%) 50%,
-    hsl(215 27.9% 16.9%) 75%
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.10) 50%,
+    rgba(255, 255, 255, 0.08) 60%,
+    rgba(255, 255, 255, 0.04) 100%
   );
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.2s ease-in-out infinite;
 }
