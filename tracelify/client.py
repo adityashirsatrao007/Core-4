@@ -2,7 +2,7 @@ from .config import Config
 from .hub import set_client
 from .scope import Scope
 from .queue import event_queue
-from .worker import start_worker
+from .worker import start_worker, _flush
 from .handlers import setup_global_handler
 from .utils import get_runtime_context, get_timestamp, generate_event_id
 import traceback
@@ -62,8 +62,6 @@ class Tracelify:
 
         event_queue.put(event)
 
-    # -------- USER METHODS --------
-
     def set_user(self, user):
         self.scope.set_user(user)
 
@@ -72,3 +70,8 @@ class Tracelify:
 
     def add_breadcrumb(self, message):
         self.scope.add_breadcrumb(message)
+
+    def flush(self, timeout: float = 5.0) -> None:
+        """Block until all queued events are sent (or timeout expires).
+        Call this before program exit to ensure no events are lost."""
+        _flush(timeout=timeout)

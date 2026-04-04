@@ -137,6 +137,7 @@ async def update_issue(
         issue.status = req.status
 
     await db.flush()
+    await db.refresh(issue)   # reload from DB so Pydantic doesn't hit expired attrs
     return IssueOut.model_validate(issue)
 
 

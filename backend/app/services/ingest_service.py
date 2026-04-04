@@ -84,6 +84,7 @@ async def enqueue_event(
         "public_key": public_key,
         "level": event.level,
         "release": event.release,
+        "environment": "production",   # SDK doesn't pass env yet; default here
         "fingerprint": event.fingerprint,
         "timestamp": event.timestamp,
         "error": event.error.model_dump() if event.error else None,

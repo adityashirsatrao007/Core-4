@@ -39,7 +39,7 @@ def _compute_fingerprint(payload: dict) -> str:
     stacktrace = error.get("stacktrace", "") or ""
 
     # Take the last meaningful line of the stacktrace for grouping
-    lines = [l.strip() for l in stacktrace.strip().splitlines() if l.strip()]
+    lines = [line.strip() for line in stacktrace.strip().splitlines() if line.strip()]
     key_line = lines[-1] if lines else (error.get("message", "") or "")
 
     raw = f"{error_type}:{key_line}"
