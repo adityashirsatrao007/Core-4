@@ -10,6 +10,7 @@ import java.util.TimeZone;
 import java.util.UUID;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.concurrent.*;
 
 public class Tracelify {
     private String dsn;
@@ -17,10 +18,15 @@ public class Tracelify {
     private Map<String, Object> user = new HashMap<>();
     private Map<String, String> tags = new HashMap<>();
     private List<Map<String, String>> breadcrumbs = new ArrayList<>();
+    
+    // Async Worker & Batching
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
+    private BlockingQueue<Map<String, Object>> logBatchQueue = new LinkedBlockingQueue<>(500);
 
     public Tracelify(String dsn, String release) {
         this.dsn = dsn;
         this.release = release;
+        enableGlobalCrashReporting();
     }
 
     public void setUser(Map<String, Object> user) {
@@ -79,7 +85,43 @@ public class Tracelify {
             event.put("breadcrumbs", this.breadcrumbs);
         }
 
-        System.out.println(mapToJson(event));
+        // Asynchronous Batching Implementation
+        logBatchQueue.offer(event);
+        if (logBatchQueue.size() >= 5) {
+            flush();
+        }
+    }
+
+    public void flush() {
+        executor.submit(() -> {
+            List<Map<String, Object>> batch = new ArrayList<>();
+            logBatchQueue.drainTo(batch);
+            if (!batch.isEmpty()) {
+                System.out.println("\n[Async Worker] Non-Blocking FLUSH for " + batch.size() + " items:");
+                System.out.println(listToJson(batch));
+                // HTTP Dispatch happens here asynchronously!
+            }
+        });
+    }
+
+    private void enableGlobalCrashReporting() {
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            System.err.println("Fatal JVM Crash Intercepted by Tracelify Global Handler!");
+            Exception e = (throwable instanceof Exception) ? (Exception) throwable : new Exception(throwable);
+            captureException(e);
+            
+            // Critical shutdown wait to ensure network finishes before process dies
+            flush();
+            executor.shutdown();
+            try {
+                executor.awaitTermination(5, TimeUnit.SECONDS);
+            } catch (InterruptedException ignored) {}
+        });
+    }
+
+    public void shutdown() {
+        flush();
+        executor.shutdown();
     }
 
     private String getProjectIdFromDsn(String dsn) {

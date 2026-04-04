@@ -4,10 +4,82 @@
 #include <chrono>
 #include <iomanip>
 #include <random>
+#include <exception>
 
 namespace tracelify {
 
-Tracelify::Tracelify(const std::string& dsn, const std::string& release) : dsn(dsn), release(release) {}
+static Tracelify* g_tracelify_instance = nullptr;
+
+static void global_terminate_handler() {
+    std::cerr << "Fatal C++ Crash Intercepted by Tracelify Global Handler!\n";
+    if (g_tracelify_instance) {
+        try {
+            // Attempt to rethrow current exception to parse it
+            if (std::current_exception()) {
+                std::rethrow_exception(std::current_exception());
+            }
+        } catch (const std::exception& e) {
+            g_tracelify_instance->capture_exception(e);
+        } catch (...) {
+            std::runtime_error err("Unknown C++ Terminate Exception");
+            g_tracelify_instance->capture_exception(err);
+        }
+        g_tracelify_instance->flush();
+    }
+    std::abort();
+}
+
+void Tracelify::init_global_handlers(Tracelify* instance) {
+    g_tracelify_instance = instance;
+    std::set_terminate(global_terminate_handler);
+}
+
+Tracelify::Tracelify(const std::string& dsn, const std::string& release) : dsn(dsn), release(release) {
+    worker_thread = std::thread(&Tracelify::worker_loop, this);
+    init_global_handlers(this);
+}
+
+Tracelify::~Tracelify() {
+    flush();
+    {
+        std::lock_guard<std::mutex> lock(queue_mutex);
+        stop_worker = true;
+    }
+    queue_cv.notify_all();
+    if (worker_thread.joinable()) {
+        worker_thread.join();
+    }
+}
+
+void Tracelify::worker_loop() {
+    while (!stop_worker) {
+        std::vector<std::string> batch;
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            queue_cv.wait(lock, [this]{ return stop_worker || !log_queue.empty(); });
+            
+            // Pop up to 5 events for batching
+            while (!log_queue.empty() && batch.size() < 5) {
+                batch.push_back(log_queue.front());
+                log_queue.pop();
+            }
+        }
+        
+        if (!batch.empty()) {
+            std::cout << "\n[Async Worker] Non-Blocking FLUSH for " << batch.size() << " items:\n[";
+            for (size_t i = 0; i < batch.size(); ++i) {
+                std::cout << batch[i] << (i < batch.size() - 1 ? ", " : "");
+            }
+            std::cout << "]\n";
+            // Native HTTP request logic would execute asynchronously here
+        }
+    }
+}
+
+void Tracelify::flush() {
+    // Notify worker to wake up instantly and dump everything
+    queue_cv.notify_all();
+}
 
 void Tracelify::set_user(const std::map<std::string, std::string>& user) {
     this->user = user;
@@ -123,8 +195,12 @@ void Tracelify::capture_exception(const std::exception& e) {
     
     json << "}";
     
-    std::cout << "Captured Exception Event Payload:\n";
-    std::cout << json.str() << "\n";
+    // Batch processing: Route to async worker rather than syncing natively
+    {
+        std::lock_guard<std::mutex> lock(queue_mutex);
+        log_queue.push(json.str());
+    }
+    queue_cv.notify_one();
 }
 
 }
