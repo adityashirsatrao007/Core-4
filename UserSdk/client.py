@@ -5,6 +5,7 @@ from .queue import event_queue
 from .worker import start_worker
 from .handlers import setup_global_handler
 from .utils import get_runtime_context, get_timestamp
+import traceback
 
 
 class Tracelify:
@@ -23,6 +24,13 @@ class Tracelify:
         setup_global_handler()
 
     def capture_exception(self, error, stacktrace=None):
+
+        if stacktrace is None:
+            tb = getattr(error, "__traceback__", None)
+            if tb is not None:
+                stacktrace = traceback.format_exception(type(error), error, tb)
+            else:
+                stacktrace = []
 
         event = {
             "project_id": self.config.project_id,
