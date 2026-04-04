@@ -1,5 +1,6 @@
 import platform
 import time
+import uuid
 from datetime import datetime, timezone
 
 def get_runtime_context():
@@ -11,3 +12,7 @@ def get_runtime_context():
 
 def get_timestamp():
     return datetime.now(timezone.utc).isoformat()
+
+def generate_event_id():
+    """Return a unique hex string (UUID4) for each event."""
+    return uuid.uuid4().hex

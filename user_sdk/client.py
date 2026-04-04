@@ -4,14 +4,14 @@ from .scope import Scope
 from .queue import event_queue
 from .worker import start_worker
 from .handlers import setup_global_handler
-from .utils import get_runtime_context, get_timestamp
+from .utils import get_runtime_context, get_timestamp, generate_event_id
 import traceback
 
 
 class Tracelify:
 
-    def __init__(self, dsn):
-        self.config = Config(dsn)
+    def __init__(self, dsn, release):
+        self.config = Config(dsn, release=release)
         self.scope = Scope()
 
         # register global client
@@ -23,7 +23,7 @@ class Tracelify:
         # enable auto error capture
         setup_global_handler()
 
-    def capture_exception(self, error, stacktrace=None):
+    def capture_exception(self, error, stacktrace=None, level="error", fingerprint=None):
 
         if stacktrace is None:
             tb = getattr(error, "__traceback__", None)
@@ -42,10 +42,14 @@ class Tracelify:
             stacktrace = "No stacktrace available"
 
         event = {
+            "event_id": generate_event_id(),
             "project_id": self.config.project_id,
             "timestamp": get_timestamp(),
-            "client": {              
-            "sdk": "tracelify.python"
+            "level": level,
+            "release": self.config.release,
+            **(  {"fingerprint": fingerprint} if fingerprint is not None else {}),
+            "client": {
+                "sdk": "tracelify.python"
             },
             "error": {
                 "type": type(error).__name__,

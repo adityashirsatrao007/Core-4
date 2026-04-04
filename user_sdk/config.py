@@ -1,7 +1,7 @@
 from urllib.parse import urlparse
 
 class Config:
-    def __init__(self, dsn):
+    def __init__(self, dsn, release):
         parsed = urlparse(dsn)
 
         self.protocol = parsed.scheme
@@ -11,6 +11,7 @@ class Config:
 
         path_parts = parsed.path.strip("/").split("/")
         self.project_id = path_parts[1] if len(path_parts) > 1 else "1"
+        self.release = release
 
     def get_endpoint(self):
         return f"{self.protocol}://{self.host}:{self.port}/events"
