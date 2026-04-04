@@ -1,0 +1,137 @@
+"""
+Tracelify Backend — FastAPI Application Entry Point
+
+Start with:
+  uvicorn main:app --reload --host 0.0.0.0 --port 8000
+"""
+import asyncio
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
+
+from app.core.config import settings
+from app.core.database import init_db, check_db_connection
+from app.core.redis import get_redis_pool, close_redis_pool
+
+# Import all models so SQLAlchemy sees them before create_all()
+import app.models  # noqa: F401
+
+from app.routers import auth, orgs, projects, events, issues
+from app.worker.worker import run_worker
+
+
+# ── Lifespan ───────────────────────────────────────────────────────────────────
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup + shutdown lifecycle."""
+    logger.info(f"🚀 Starting {settings.APP_NAME} backend [{settings.APP_ENV}]")
+
+    # 1. Check DB
+    if await check_db_connection():
+        logger.info("✅ PostgreSQL (Neon) connected")
+    else:
+        logger.error("❌ PostgreSQL connection FAILED — events will still queue")
+
+    # 2. Init tables (dev shortcut — use Alembic in production)
+    if settings.APP_ENV == "development":
+        await init_db()
+
+    # 3. Warm Redis pool
+    await get_redis_pool()
+    logger.info("✅ Redis connected")
+
+    # 4. Start background worker
+    worker_task = asyncio.create_task(run_worker())
+    logger.info("✅ Background worker started")
+
+    yield  # ── app is running ──
+
+    # Shutdown
+    logger.info("🛑 Shutting down...")
+    worker_task.cancel()
+    try:
+        await worker_task
+    except asyncio.CancelledError:
+        pass
+
+    await close_redis_pool()
+    logger.info("👋 Tracelify backend stopped")
+
+
+# ── App ────────────────────────────────────────────────────────────────────────
+
+app = FastAPI(
+    title="Tracelify API",
+    description="""
+## 🐛 Tracelify — Error Tracking Backend
+
+Production-grade error tracking system (Sentry-like) built with FastAPI.
+
+### Features
+- **User Auth** — Google OAuth2 + email/password + JWT
+- **Organizations & Projects** — multi-tenant with role-based access
+- **DSN Generation** — unique key per project for SDK integration
+- **Event Ingest** — SDK posts errors → validated → queued → stored
+- **Issue Grouping** — smart fingerprinting groups related errors
+- **Alerts** — event count thresholds, new issue triggers, email/webhook
+
+### SDK DSN format
+```
+http://<public_key>@<host>/api/<project_id>/events
+```
+    """,
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan,
+)
+
+
+# ── CORS ───────────────────────────────────────────────────────────────────────
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        settings.FRONTEND_URL,
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ── Routers ────────────────────────────────────────────────────────────────────
+
+app.include_router(auth.router)
+app.include_router(orgs.router)
+app.include_router(projects.router)
+app.include_router(events.router)
+app.include_router(issues.router)
+
+
+# ── Health check ───────────────────────────────────────────────────────────────
+
+@app.get("/health", tags=["Health"])
+async def health():
+    db_ok = await check_db_connection()
+    return {
+        "status": "ok" if db_ok else "degraded",
+        "service": settings.APP_NAME,
+        "version": "1.0.0",
+        "db": "connected" if db_ok else "disconnected",
+    }
+
+
+@app.get("/", tags=["Health"])
+async def root():
+    return {
+        "message": f"Welcome to {settings.APP_NAME} API",
+        "docs": "/docs",
+        "health": "/health",
+    }
