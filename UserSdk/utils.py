@@ -1,5 +1,6 @@
 import platform
 import time
+from datetime import datetime, timezone
 
 def get_runtime_context():
     return {
@@ -9,4 +10,4 @@ def get_runtime_context():
     }
 
 def get_timestamp():
-    return time.time()
+    return datetime.now(timezone.utc).isoformat()
