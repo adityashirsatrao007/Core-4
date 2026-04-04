@@ -8,6 +8,7 @@ def send_event(config, data: dict) -> None:
     Endpoint: POST /api/{project_id}/events
     Auth: Authorization: Bearer <public_key>
     """
+    print(data)
     try:
         url = config.get_endpoint()
         headers = config.get_headers()

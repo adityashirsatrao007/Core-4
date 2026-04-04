@@ -1,7 +1,7 @@
 #include "../include/tracelify.h"
 #include <iostream>
 #include <stdexcept>
-
+// "cd java && java -cp out com.tracelify.Test" 
 int main() {
     tracelify::Tracelify sdk("http://demo_key@localhost:8000/project/2/events", "1.0.0");
     

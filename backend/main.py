@@ -1,9 +1,3 @@
-"""
-Tracelify Backend — FastAPI Application Entry Point
-
-Start with:
-  uvicorn main:app --reload --host 0.0.0.0 --port 8000
-"""
 import asyncio
 from contextlib import asynccontextmanager
 
@@ -20,9 +14,6 @@ import app.models  # noqa: F401
 
 from app.routers import auth, orgs, projects, events, issues
 from app.worker.worker import run_worker
-
-
-# ── Lifespan ───────────────────────────────────────────────────────────────────
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
