@@ -1,8 +1,12 @@
 import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 
 import ProtectedRoute from "./ProtectedRoute";
+import PublicOnlyRoute from "./PublicOnlyRoute";
 import MainLayout from "@/layouts/MainLayout";
 import AuthLayout from "@/layouts/AuthLayout";
+
+// Landing page
+import Landing from "@/pages/Landing";
 
 // Auth pages
 import Login from "@/pages/auth/Login";
@@ -18,6 +22,9 @@ import ErrorDetails from "@/pages/errors/ErrorDetails";
 import Settings from "@/pages/settings/Settings";
 
 const router = createBrowserRouter([
+  // ── Landing page — public, redirect to dashboard if already logged in ──────
+  { path: "/", element: <PublicOnlyRoute><Landing /></PublicOnlyRoute> },
+
   // ── Public auth routes ────────────────────────────────────────────────────
   {
     element: <AuthLayout />,
@@ -37,9 +44,6 @@ const router = createBrowserRouter([
       {
         element: <MainLayout />,
         children: [
-          // Root redirect
-          { path: "/", element: <Navigate to="/dashboard" replace /> },
-
           // Dashboard
           { path: "/dashboard", element: <Dashboard /> },
 
