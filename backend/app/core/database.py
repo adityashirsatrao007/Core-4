@@ -1,3 +1,5 @@
+from typing import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import text
@@ -14,8 +16,9 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_recycle=300,
     connect_args={
-        "ssl": "require",
-        "statement_cache_size": 0,      # required for PgBouncer (Neon pooler)
+        # ssl=require is already in DATABASE_URL query string — asyncpg picks it up.
+        # statement/prepared cache must be 0 for Neon's PgBouncer pooler.
+        "statement_cache_size": 0,
         "prepared_statement_cache_size": 0,
     },
 )
@@ -54,7 +57,7 @@ async def check_db_connection() -> bool:
         return False
 
 
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency — yields an async DB session."""
     async with AsyncSessionLocal() as session:
         try:
