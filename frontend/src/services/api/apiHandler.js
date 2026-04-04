@@ -136,3 +136,14 @@ export const issuesApi = {
 export const healthApi = {
   check: () => apiClient.get("/health").then((r) => r.data),
 };
+
+/**
+ * ─── LLM Report API ───────────────────────────────────────────────────────────
+ */
+export const reportApi = {
+  /** POST /report/generate → ReportResponse */
+  generate: () => apiClient.post(`/report/generate`).then((r) => r.data),
+
+  /** GET /report/health → Health check status */
+  checkHealth: () => apiClient.get(`/report/health`).then((r) => r.data),
+};

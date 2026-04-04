@@ -21,6 +21,7 @@ class ReportResponse(BaseModel):
     status: str
     message: str
     report_preview: str
+    full_report: str
     markdown_path: str
     json_path: str
     generated_at: str
@@ -64,6 +65,7 @@ async def generate_report(current_user: CurrentUser):
         status="success",
         message="Report generated successfully via Amazon Nova Pro",
         report_preview=preview,
+        full_report=report,
         markdown_path=md_path,
         json_path=json_path,
         generated_at=datetime.now(timezone.utc).isoformat(),
