@@ -1,4 +1,4 @@
-from user_sdk.client import Tracelify
+from tracelify.client import Tracelify
 
 sdk = Tracelify(
     dsn="http://demo_key@localhost:8000/project/2/events",

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tracelify-sdk"
+version = "1.0.0"
+authors = [
+  { name="Aditya", email="aditya@example.com" },
+]
+description = "A Python SDK for tracking events on Tracelify platform natively."
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[tool.setuptools.packages.find]
+include = ["tracelify", "tracelify.*"]
