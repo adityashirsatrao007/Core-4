@@ -3,14 +3,16 @@ Auth routes:
   POST /auth/signup           — email + password registration
   POST /auth/login            — email + password login
   GET  /auth/google           — returns Google OAuth consent URL
-  GET  /auth/google/callback  — handles OAuth redirect, returns JWT
+  GET  /auth/google/callback  — handles OAuth redirect, redirects to frontend with JWT
   GET  /auth/me               — returns current user info
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import RedirectResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.deps import CurrentUser
+from app.core.config import settings
 from app.schemas.auth import (
     SignupRequest,
     LoginRequest,
@@ -64,8 +66,7 @@ async def google_login():
 
 @router.get(
     "/google/callback",
-    response_model=TokenResponse,
-    summary="Handle Google OAuth2 redirect",
+    summary="Handle Google OAuth2 redirect — redirects to frontend with JWT",
 )
 async def google_callback(
     code: str,
@@ -74,14 +75,20 @@ async def google_callback(
     try:
         user_info = await auth_service.exchange_google_code(code)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Google OAuth failed: {str(e)}",
+        # Redirect to frontend login page with error flag
+        return RedirectResponse(
+            url=f"{settings.FRONTEND_URL}/login?error=google_failed",
+            status_code=302,
         )
 
     user = await auth_service.upsert_google_user(db, user_info)
     token = auth_service.issue_token(user)
-    return TokenResponse(access_token=token, user=UserOut.model_validate(user))
+
+    # Redirect to the frontend callback handler with JWT as query param
+    return RedirectResponse(
+        url=f"{settings.FRONTEND_URL}/auth/callback?token={token}",
+        status_code=302,
+    )
 
 
 @router.get(

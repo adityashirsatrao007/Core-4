@@ -54,8 +54,8 @@ class Settings(BaseSettings):
     GOOGLE_USERINFO_URL: str = "https://www.googleapis.com/oauth2/v3/userinfo"
     GOOGLE_AUTH_URL: str = "https://accounts.google.com/o/oauth2/v2/auth"
 
-    # Frontend
-    FRONTEND_URL: str = "http://localhost:3000"
+    # Frontend (Vite dev server port by default)
+    FRONTEND_URL: str = "http://localhost:5173"
 
     # Email Alerts
     SMTP_HOST: str = "smtp.gmail.com"
