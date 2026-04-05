@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <random>
 #include <exception>
+#include <typeinfo>
 
 namespace tracelify {
 
@@ -52,12 +53,16 @@ Tracelify::~Tracelify() {
 }
 
 void Tracelify::worker_loop() {
-    while (!stop_worker) {
+    while (true) {
         std::vector<std::string> batch;
         {
             std::unique_lock<std::mutex> lock(queue_mutex);
             queue_cv.wait(lock, [this]{ return stop_worker || !log_queue.empty(); });
             
+            if (stop_worker && log_queue.empty()) {
+                break;
+            }
+
             // Pop up to 5 events for batching
             while (!log_queue.empty() && batch.size() < 5) {
                 batch.push_back(log_queue.front());
@@ -66,12 +71,24 @@ void Tracelify::worker_loop() {
         }
         
         if (!batch.empty()) {
-            std::cout << "\n[Async Worker] Non-Blocking FLUSH for " << batch.size() << " items:\n[";
+            std::cout << "\n[Async Worker] Non-Blocking FLUSH for " << batch.size() << " items...\n";
             for (size_t i = 0; i < batch.size(); ++i) {
-                std::cout << batch[i] << (i < batch.size() - 1 ? ", " : "");
+                std::string payload = batch[i];
+                // Escape single quotes for shell safety
+                std::string escaped_payload;
+                for (char c : payload) {
+                    if (c == '\'') escaped_payload += "'\"'\"'";
+                    else escaped_payload += c;
+                }
+                
+                std::string cmd = "curl -s -o /dev/null -X POST -H 'Content-Type: application/json' -d '" + escaped_payload + "' " + dsn;
+                int result = std::system(cmd.c_str());
+                if (result == 0) {
+                    std::cout << "✅ Dispatched event to Tracelify API\n";
+                } else {
+                    std::cerr << "❌ Failed to dispatch event to Tracelify\n";
+                }
             }
-            std::cout << "]\n";
-            // Native HTTP request logic would execute asynchronously here
         }
     }
 }
@@ -95,7 +112,16 @@ void Tracelify::add_breadcrumb(const std::string& message) {
 
 std::string Tracelify::get_project_id() const {
     size_t pos = dsn.find("/project/");
-    if (pos != std::string::npos) {
+    if (pos == std::string::npos) {
+        pos = dsn.find("/api/");
+        if (pos != std::string::npos) {
+            size_t start = pos + 5;
+            size_t end = dsn.find("/", start);
+            if (end != std::string::npos) {
+                return dsn.substr(start, end - start);
+            }
+        }
+    } else {
         size_t start = pos + 9;
         size_t end = dsn.find("/", start);
         if (end != std::string::npos) {
@@ -148,10 +174,10 @@ void Tracelify::capture_exception(const std::exception& e) {
     json << "\"client\": {\"sdk\": \"tracelify.cpp\"}, ";
     
     json << "\"error\": {";
-    std::string exType = "Exception"; 
+    std::string exType = typeid(e).name(); 
     json << "\"type\": \"" << exType << "\", ";
     json << "\"message\": \"" << escape_json_string(e.what()) << "\", ";
-    json << "\"stacktrace\": \"No stacktrace available in std C++\"";
+    json << "\"stacktrace\": \"\"";
     json << "}, ";
     
     json << "\"context\": {";
