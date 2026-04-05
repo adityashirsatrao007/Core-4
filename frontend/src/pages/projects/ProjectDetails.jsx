@@ -113,6 +113,10 @@ export default function ProjectDetails() {
   const [showReport, setShowReport] = useState(false);
   const [reportResult, setReportResult] = useState(null);
 
+  const backendUrl = import.meta.env.VITE_API_BASE_URL || "";
+  const backendHost = backendUrl ? new URL(backendUrl).host : "localhost:8000";
+  const fixDsn = (dsn) => dsn?.replace("localhost:8000", backendHost);
+
   const { data: project, isLoading: projectLoading } = useFetch(
     QUERY_KEYS.PROJECT(projectId),
     () => projectsApi.getProject(projectId),
@@ -312,9 +316,9 @@ export default function ProjectDetails() {
                 </div>
 
                 <div className="flex items-center gap-2 rounded-xl bg-slate-950/60 border border-slate-800/60 px-4 py-3">
-                  <code className="flex-1 text-xs text-slate-300 font-mono break-all leading-relaxed">{key.dsn}</code>
+                  <code className="flex-1 text-xs text-slate-300 font-mono break-all leading-relaxed">{fixDsn(key.dsn)}</code>
                   <button
-                    onClick={() => handleCopy(key.dsn, key.id)}
+                    onClick={() => handleCopy(fixDsn(key.dsn), key.id)}
                     className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-colors"
                   >
                     {copiedKey === key.id ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}

@@ -271,7 +271,10 @@ export default function DocsPage() {
     { enabled: !!projectId },
   );
 
-  const activeDsn = dsnKeys[0]?.dsn ?? "<your-dsn>";
+  const backendUrl = import.meta.env.VITE_API_BASE_URL || "";
+  const backendHost = backendUrl ? new URL(backendUrl).host : "localhost:8000";
+  const rawDsn = dsnKeys[0]?.dsn ?? "<your-dsn>";
+  const activeDsn = rawDsn.replace("localhost:8000", backendHost);
 
   // Auto-select language based on project platform
   const defaultLang = platformToLang[project?.platform] ?? "python";
