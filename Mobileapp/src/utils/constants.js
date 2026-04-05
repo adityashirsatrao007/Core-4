@@ -60,4 +60,4 @@ export const USER_STORAGE_KEY = 'tracelify_user_cache';
 export const DEFAULT_PAGE_LIMIT = 50;
 
 /** API Base URL */
-export const API_BASE_URL = 'http://13.215.64.197:8000';
+export const API_BASE_URL = 'http://54.251.156.151:8000';

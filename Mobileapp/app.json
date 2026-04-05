@@ -23,14 +23,29 @@
         "backgroundColor": "#09090f"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.tracelify.mobile"
+      "package": "com.tracelify.mobile",
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-secure-store",
-      "expo-web-browser"
-    ]
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b8683ced-eee4-4942-b8f1-c72735057958"
+      }
+    },
+    "owner": "razashaikh21"
   }
 }
