@@ -90,6 +90,7 @@ app.add_middleware(
     allow_origins=[
         settings.FRONTEND_URL,
         "http://localhost:3000",
+        "https://tracelify.vercel.app"
         "http://localhost:5173",
         "http://localhost:5174",
         "http://127.0.0.1:3000",

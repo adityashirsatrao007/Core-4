@@ -11,8 +11,7 @@ import java.util.concurrent.TimeUnit;
 public class TracelifyTest {
 
     // ── Real deployed DSN ──────────────────────────────────────────────────────
-    private static final String DSN =
-        "http://f965e01dceebe962796c7279b2b6c3e2@54.251.156.151:8000/api/f729e35c-3826-4cfc-a1c4-b684a7103c04/events";
+    private static final String DSN = "http://c482f74735cacf53d2ad256c8429f1f7@54.251.156.151:8000/api/d19f7705-48bc-4842-af80-55da7bc29007/events";
 
     public static void main(String[] args) throws InterruptedException {
         System.out.println("=== Tracelify Java SDK — Integration Test ===");

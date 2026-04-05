@@ -38,7 +38,7 @@ from tracelify import Tracelify  # noqa: E402
 #   Format:  http://<public_key>@localhost:8000/api/<project_id>/events
 # ══════════════════════════════════════════════════════════════════════════════
 
-DSN     = "http://02f35033cd8de8648ba48aebdb7b1f4f@localhost:8000/api/786254c8-c5f8-4566-96c4-6d3503fc275f/events"
+DSN     = "http://d870ed15cf128edc338ebda2c7b9d3bd@54.251.156.151:8000/api/0c4a7485-7615-464c-a06b-d93e775495fa/events"
 RELEASE = "sdk-test@1.0.0"
 
 # ── ANSI colours ──────────────────────────────────────────────────────────────
