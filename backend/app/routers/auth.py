@@ -56,12 +56,11 @@ async def login(
 
 @router.get(
     "/google",
-    response_model=GoogleAuthUrl,
-    summary="Get Google OAuth2 consent URL",
+    summary="Redirect to Google OAuth2 consent screen",
 )
 async def google_login():
     url = auth_service.get_google_auth_url()
-    return GoogleAuthUrl(url=url)
+    return RedirectResponse(url=url)
 
 
 @router.get(
