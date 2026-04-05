@@ -13,7 +13,7 @@ from app.core.redis import get_redis_pool, close_redis_pool
 # Import all models so SQLAlchemy sees them before create_all()
 import app.models  # noqa: F401
 
-from app.routers import auth, orgs, projects, events, issues, report
+from app.routers import auth, orgs, projects, events, issues, report, alerts
 from app.worker.worker import run_worker
 
 @asynccontextmanager
@@ -111,6 +111,7 @@ app.include_router(projects.router)
 app.include_router(events.router)
 app.include_router(issues.router)
 app.include_router(report.router)
+app.include_router(alerts.router)
 
 
 # ── Health check ───────────────────────────────────────────────────────────────
