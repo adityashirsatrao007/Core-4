@@ -97,6 +97,10 @@ const router = createBrowserRouter([
             element: <Suspense fallback={<PageSkeleton />}><ErrorDetails /></Suspense>,
           },
           {
+            path: "/orgs/:orgId/projects/:projectId/docs",
+            element: <Suspense fallback={<PageSkeleton />}><DocsPage /></Suspense>,
+          },
+          {
             path: "/docs",
             element: <Suspense fallback={<PageSkeleton />}><DocsIndex /></Suspense>,
           },
