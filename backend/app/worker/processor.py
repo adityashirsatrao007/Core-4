@@ -14,11 +14,10 @@ import json
 from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
-from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
-from app.models.event import Event, AlertRule
+from app.models.event import Event
 from app.models.issue import Issue
 from app.models.project import Project
 from app.services.alert_service import evaluate_alerts
@@ -59,34 +58,44 @@ async def process_event(raw_json: str) -> None:
 
     async with AsyncSessionLocal() as db:
         try:
-            await _process(db, payload)
+            project_id, issue, is_new_issue = await _process(db, payload)
             await db.commit()
         except Exception as exc:
             await db.rollback()
             logger.exception(f"Event processing failed: {exc}")
+            return
+
+    # Bug fix #3: Run alert evaluation AFTER commit so that an email/webhook
+    # failure never triggers a rollback that drops the stored event.
+    if issue is not None and project_id is not None:
+        async with AsyncSessionLocal() as db:
+            try:
+                await evaluate_alerts(db, project_id, issue, is_new_issue)
+            except Exception as exc:
+                logger.error(f"Alert evaluation failed (event still saved): {exc!r}")
 
 
-async def _process(db: AsyncSession, payload: dict) -> None:
+async def _process(db: AsyncSession, payload: dict) -> tuple:
     project_id_str = payload.get("project_id")
     event_id_str = payload.get("event_id")
 
     if not project_id_str or not event_id_str:
         logger.error("Event missing project_id or event_id — skipping")
-        return
+        return None, None, False
 
     try:
         project_id = uuid.UUID(project_id_str)
         event_id = uuid.UUID(event_id_str)
     except ValueError as exc:
         logger.error(f"Invalid UUID in event payload: {exc}")
-        return
+        return None, None, False
 
     # ── Verify project exists ──────────────────────────────────────────────────
     p_result = await db.execute(select(Project).where(Project.id == project_id))
     project = p_result.scalar_one_or_none()
     if not project:
         logger.warning(f"Project {project_id} not found, dropping event {event_id}")
-        return
+        return None, None, False
 
     # ── Compute fingerprint ────────────────────────────────────────────────────
     fingerprint = _compute_fingerprint(payload)
@@ -176,5 +185,4 @@ async def _process(db: AsyncSession, payload: dict) -> None:
         f"project={project_id}"
     )
 
-    # ── Trigger Alerts ─────────────────────────────────────────────────────────
-    await evaluate_alerts(db, project_id, issue, is_new_issue)
+    return project_id, issue, is_new_issue

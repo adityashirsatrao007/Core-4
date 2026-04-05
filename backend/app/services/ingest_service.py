@@ -6,11 +6,12 @@ Event ingest service:
 """
 import json
 import uuid
+from typing import Any
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.models.project import DsnKey, Project
+from app.models.project import DsnKey
 from app.schemas.event import IngestEventRequest
 from app.core.redis import push_to_queue
 from loguru import logger
@@ -20,13 +21,15 @@ async def validate_dsn(
     db: AsyncSession,
     public_key: str,
     project_id: str,
-) -> Project:
+) -> "SimpleNamespace":
     """
     Verify that:
       - public_key exists in dsn_keys and is_active=True
       - The key belongs to the given project_id
-    Returns the Project on success, raises 401/404 on failure.
+    Returns a lightweight object with .id on success, raises 401/404 on failure.
     """
+    from types import SimpleNamespace
+
     result = await db.execute(
         select(DsnKey).where(
             DsnKey.public_key == public_key,
@@ -56,21 +59,12 @@ async def validate_dsn(
             detail="DSN key does not belong to this project",
         )
 
-    # Fetch the project
-    project_result = await db.execute(select(Project).where(Project.id == pid))
-    project = project_result.scalar_one_or_none()
-
-    if project is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found",
-        )
-
-    return project
+    # Return lightweight object — no second DB query needed (enqueue only uses .id)
+    return SimpleNamespace(id=pid)
 
 
 async def enqueue_event(
-    project: Project,
+    project: Any,
     event: IngestEventRequest,
     public_key: str,
 ) -> str:

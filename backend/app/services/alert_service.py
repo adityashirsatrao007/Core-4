@@ -13,6 +13,7 @@ from sqlalchemy import select, func
 from app.models.event import AlertRule, Event
 from app.models.issue import Issue
 from app.core.config import settings
+from app.core.redis import get_redis_pool
 from loguru import logger
 
 
@@ -35,6 +36,13 @@ async def evaluate_alerts(
         try:
             should_fire = await _check_condition(db, rule, issue, is_new_issue, project_id)
             if should_fire:
+                # ── Cooldown check: skip if rule already fired recently ──────
+                if await _is_on_cooldown(rule):
+                    logger.debug(
+                        f"⏱️  Rule '{rule.name}' is on cooldown — skipping"
+                    )
+                    continue
+                await _set_cooldown(rule)
                 await _fire_action(rule, issue)
         except Exception as exc:
             logger.error(f"Alert rule {rule.id} evaluation failed: {exc}")
@@ -79,6 +87,35 @@ async def _check_condition(
     return False
 
 
+# ── Cooldown helpers ───────────────────────────────────────────────────────────
+# Each rule is rate-limited to fire at most once per COOLDOWN_SECONDS.
+# Redis key: "alert:cooldown:<rule_id>"
+
+COOLDOWN_SECONDS = 15 * 60  # 15 minutes
+
+
+async def _is_on_cooldown(rule: AlertRule) -> bool:
+    """Return True if this rule has fired recently (cooldown key exists in Redis)."""
+    try:
+        redis = await get_redis_pool()
+        key = f"alert:cooldown:{rule.id}"
+        return await redis.exists(key) == 1
+    except Exception as exc:
+        # If Redis is unreachable, let the alert fire (fail-open)
+        logger.warning(f"Cooldown check failed for rule {rule.id}: {exc!r} — allowing fire")
+        return False
+
+
+async def _set_cooldown(rule: AlertRule) -> None:
+    """Mark this rule as recently fired so it won't fire again until cooldown expires."""
+    try:
+        redis = await get_redis_pool()
+        key = f"alert:cooldown:{rule.id}"
+        await redis.set(key, "1", ex=COOLDOWN_SECONDS)
+    except Exception as exc:
+        logger.warning(f"Failed to set cooldown for rule {rule.id}: {exc!r}")
+
+
 async def _fire_action(rule: AlertRule, issue: Issue) -> None:
     """Execute the alert action (email or webhook)."""
     action = rule.action
@@ -94,6 +131,14 @@ async def _fire_action(rule: AlertRule, issue: Issue) -> None:
 
 async def _send_email_alert(action: dict, rule: AlertRule, issue: Issue) -> None:
     """Send an email alert using aiosmtplib."""
+    # Bug fix #1: Guard against unconfigured SMTP credentials.
+    # Without this, aiosmtplib.send() silently fails with a Gmail auth error.
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        logger.warning(
+            "Email alert skipped: SMTP_USER or SMTP_PASSWORD is not configured in .env"
+        )
+        return
+
     try:
         import aiosmtplib
         from email.mime.text import MIMEText
@@ -101,11 +146,14 @@ async def _send_email_alert(action: dict, rule: AlertRule, issue: Issue) -> None
 
         recipients = action.get("recipients", [])
         if not recipients:
+            logger.warning(f"Email alert rule '{rule.name}' has no recipients configured.")
             return
 
         msg = MIMEMultipart("alternative")
         msg["Subject"] = f"🚨 Tracelify Alert: {rule.name}"
-        msg["From"] = settings.ALERT_FROM_EMAIL
+        # Bug fix #2: Gmail REJECTS emails where From != the authenticated account.
+        # Use SMTP_USER (surajyou45@gmail.com) as From, not ALERT_FROM_EMAIL.
+        msg["From"] = settings.SMTP_USER
         msg["To"] = ", ".join(recipients)
 
         body = f"""
@@ -132,7 +180,7 @@ async def _send_email_alert(action: dict, rule: AlertRule, issue: Issue) -> None
         logger.info(f"📧 Alert email sent to {recipients} for rule '{rule.name}'")
 
     except Exception as exc:
-        logger.error(f"Failed to send email alert: {exc}")
+        logger.error(f"Failed to send email alert: {exc!r}")
 
 
 async def _send_webhook(action: dict, rule: AlertRule, issue: Issue) -> None:

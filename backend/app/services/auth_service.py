@@ -36,7 +36,7 @@ def get_google_auth_url() -> str:
 
 async def exchange_google_code(code: str) -> dict:
     """Exchange OAuth code for tokens and fetch user info from Google."""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         # Step 1: Exchange code for tokens
         token_resp = await client.post(
             settings.GOOGLE_TOKEN_URL,

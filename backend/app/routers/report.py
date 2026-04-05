@@ -56,8 +56,9 @@ async def generate_project_report(
     # 2. Construct specific prompt
     prompt = build_report_prompt(api_data)
     
-    # 3. Call Amazon Nova Pro
-    report = call_llm(prompt, temperature=0.3, max_tokens=2000)
+    # 3. Call Amazon Nova Pro — run in thread pool so it doesn't block the event loop
+    loop = asyncio.get_event_loop()
+    report = await loop.run_in_executor(None, lambda: call_llm(prompt, temperature=0.3, max_tokens=2000))
 
     if not report or report.startswith("[LLM unavailable"):
         raise HTTPException(status_code=502, detail="LLM service (AWS Bedrock) did not respond. Check AWS credentials.")
