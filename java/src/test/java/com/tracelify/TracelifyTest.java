@@ -2,30 +2,87 @@ package com.tracelify;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+/**
+ * Integration test — sends real events to the deployed Tracelify backend.
+ * Run with: mvn exec:java -Dexec.mainClass="com.tracelify.TracelifyTest"
+ */
 public class TracelifyTest {
-    public static void main(String[] args) {
-        Tracelify sdk = new Tracelify(
-            "http://demo_key@localhost:8000/project/2/events",
-            "1.0.0"
-        );
 
+    // ── Real deployed DSN ──────────────────────────────────────────────────────
+    private static final String DSN =
+        "http://f965e01dceebe962796c7279b2b6c3e2@54.251.156.151:8000/api/f729e35c-3826-4cfc-a1c4-b684a7103c04/events";
+
+    public static void main(String[] args) throws InterruptedException {
+        System.out.println("=== Tracelify Java SDK — Integration Test ===");
+        System.out.println("DSN: " + DSN);
+        System.out.println();
+
+        Tracelify sdk = new Tracelify(DSN, "1.0.0");
+
+        // ── Context ────────────────────────────────────────────────────────────
         Map<String, Object> user = new HashMap<>();
-        user.put("id", "user_101");
+        user.put("id", "usr_java_001");
+        user.put("email", "java-test@tracelify.io");
+        user.put("name", "Java Tester");
         sdk.setUser(user);
 
-        sdk.setTag("env", "Production");
+        sdk.setTag("env", "production");
+        sdk.setTag("sdk", "tracelify.java");
+        sdk.setTag("release", "1.0.0");
 
         sdk.addBreadcrumb("App started");
-        sdk.addBreadcrumb("User clicked button");
+        sdk.addBreadcrumb("User authenticated");
+        sdk.addBreadcrumb("Fetching data from DB");
 
+        // ── Event 1: ArithmeticException ───────────────────────────────────────
+        System.out.println("[1] Capturing ArithmeticException (division by zero)...");
         try {
             int x = 10 / 0;
-        } catch (Exception e) {
+        } catch (ArithmeticException e) {
             sdk.captureException(e);
         }
 
-        sdk.shutdown(); // Wait for async worker to flush before exit
-        System.out.println("✅ Done");
+        // ── Event 2: NullPointerException ──────────────────────────────────────
+        System.out.println("[2] Capturing NullPointerException...");
+        try {
+            String s = null;
+            s.length();
+        } catch (NullPointerException e) {
+            sdk.captureException(e);
+        }
+
+        // ── Event 3: IllegalArgumentException ─────────────────────────────────
+        System.out.println("[3] Capturing IllegalArgumentException...");
+        try {
+            throw new IllegalArgumentException("Invalid config: timeout must be > 0");
+        } catch (IllegalArgumentException e) {
+            sdk.captureException(e);
+        }
+
+        // ── Event 4: Custom RuntimeException ──────────────────────────────────
+        System.out.println("[4] Capturing RuntimeException (DB connection failed)...");
+        try {
+            throw new RuntimeException("Database connection pool exhausted after 30s");
+        } catch (RuntimeException e) {
+            sdk.captureException(e);
+        }
+
+        // ── Event 5: StackOverflowError wrapped ───────────────────────────────
+        System.out.println("[5] Capturing IndexOutOfBoundsException...");
+        try {
+            int[] arr = new int[3];
+            int x = arr[10];
+        } catch (ArrayIndexOutOfBoundsException e) {
+            sdk.captureException(e);
+        }
+
+        // ── Flush & wait ───────────────────────────────────────────────────────
+        System.out.println("\nFlushing 5 events to backend...");
+        sdk.shutdown();
+
+        System.out.println("\n✅ Done — check your Tracelify project dashboard for new issues.");
+        System.out.println("   Dashboard: https://tracelify.io or http://localhost:5173");
     }
 }
