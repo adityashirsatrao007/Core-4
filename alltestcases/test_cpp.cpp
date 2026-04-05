@@ -1,4 +1,4 @@
-#include "../Core-4/cpp/include/tracelify.h"
+#include "../cpp/include/tracelify.h"
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -13,8 +13,8 @@ int main() {
   std::cout << "=== Tracelify C++ SDK — Integration Test ===\n";
 
   tracelify::Tracelify sdk(
-      "http://51c0b6e6fe2f3c1539c6f109f471e2d2@54.251.156.151.nip.io:8000/api/"
-      "60bc3cfc-23c1-467e-89fa-5c0b7a0dd51d/events",
+      "http://2b91d0f4765477cb0760c25f23f35b4d@54.251.156.151.nip.io:8000/api/"
+      "55a3821c-eddf-4c44-9897-010dfe09da57/events",
       "1.0.0");
 
   // Contexts

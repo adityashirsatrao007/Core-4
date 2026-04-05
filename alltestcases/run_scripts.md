@@ -19,7 +19,7 @@ The native C++ SDK relies on shell-calling `curl` globally rather than complex C
 **Compile:**
 ```bash
 # Specify the actual core SDK source alongside the test.
-g++ -std=c++14 -o test_cpp test_cpp.cpp ../Core-4/cpp/src/tracelify.cpp -I../Core-4/cpp/include
+g++ -std=c++14 -o test_cpp test_cpp.cpp ../cpp/src/tracelify.cpp -I../cpp/include
 ```
 
 **Run:**
@@ -40,7 +40,25 @@ javac -cp "../Core-4/java/target/classes" TracelifyTest.java -d out
 ```bash
 java -cp "out:../Core-4/java/target/classes" com.tracelify.TracelifyTest
 ```
-javac -cp "../Core-4/java/target/classes" TracelifyTest.java -d out
-java -cp "out:../Core-4/java/target/classes" com.tracelify.TracelifyTest
+## 4. Go SDK Tests
+The native Go SDK uses standard go libraries to capture and format stack traces.
 
-hey how are youy
+**Run the script:**
+```bash
+# From the alltestcases directory:
+go run test_go.go
+```
+
+## 5. Kotlin SDK Tests
+The Kotlin tester evaluates native Kotlin SDK logic without additional external dependencies.
+
+**Compile:**
+```bash
+# From the alltestcases directory:
+kotlinc ../kotlin/src/com/tracelify/Tracelify.kt TracelifyTest.kt -include-runtime -d test_kotlin.jar
+```
+
+**Run:**
+```bash
+java -jar test_kotlin.jar
+```
