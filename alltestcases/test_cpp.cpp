@@ -1,103 +1,52 @@
 #include "../cpp/include/tracelify.h"
 #include <iostream>
-#include <map>
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <system_error>
+#include <regex>
+#include <future>
+#include <bitset>
+#include <typeinfo>
+#include <ios>
 
-// ══════════════════════════════════════════════════════════════════════════════
-//   ▶  Tracelify C++ SDK — Comprehensive Error Capture Tests
-// ══════════════════════════════════════════════════════════════════════════════
+class DatabaseError : public std::runtime_error {
+public: DatabaseError(const std::string& m) : std::runtime_error(m) {}
+};
+class AuthenticationError : public std::runtime_error {
+public: AuthenticationError(const std::string& m) : std::runtime_error(m) {}
+};
 
 int main() {
-  std::cout << "=== Tracelify C++ SDK — Integration Test ===\n";
+  std::cout << "=== Tracelify C++ SDK — Integration Test (20 Errors) ===\n";
+  tracelify::Tracelify sdk("http://2b91d0f4765477cb0760c25f23f35b4d@54.251.156.151.nip.io:8000/api/55a3821c-eddf-4c44-9897-010dfe09da57/events", "1.0.0");
 
-  tracelify::Tracelify sdk(
-      "http://2b91d0f4765477cb0760c25f23f35b4d@54.251.156.151.nip.io:8000/api/"
-      "55a3821c-eddf-4c44-9897-010dfe09da57/events",
-      "1.0.0");
-
-  // Contexts
-  std::map<std::string, std::string> user;
-  user["id"] = "usr_cpp_001";
-  user["email"] = "cpp-tester@tracelify.io";
-  sdk.set_user(user);
-
-  sdk.set_tag("env", "Production");
-  sdk.set_tag("sdk_version", "1.0.2");
-  sdk.set_tag("architecture", "x86_64");
-
-  sdk.add_breadcrumb("Application Initialized");
-  sdk.add_breadcrumb("Loading physics engine modules...");
-
-  // 1. std::runtime_error
-  std::cout << "[1] Capturing runtime_error (division by zero)...\n";
-  try {
-    throw std::runtime_error("division by zero exception in physics engine");
-  } catch (const std::exception &e) {
+  auto capture = [&](int idx, const std::exception& e) {
+    std::cout << "[" << idx << "] Capturing exception...\n";
     sdk.capture_exception(e);
-  }
+  };
 
-  // 2. std::out_of_range
-  std::cout << "[2] Capturing out_of_range for vector...\n";
-  try {
-    std::vector<int> vec = {1, 2, 3};
-    int x = vec.at(10); // Throws
-  } catch (const std::exception &e) {
-    sdk.capture_exception(e);
-  }
+  try { throw std::runtime_error("1 runtime"); } catch (const std::exception& e) { capture(1, e); }
+  try { std::vector<int> v; v.at(5); } catch (const std::exception& e) { capture(2, e); }
+  try { throw std::invalid_argument("3 invalid"); } catch (const std::exception& e) { capture(3, e); }
+  try { throw std::logic_error("4 logic"); } catch (const std::exception& e) { capture(4, e); }
+  try { throw std::domain_error("5 domain"); } catch (const std::exception& e) { capture(5, e); }
+  try { std::string s; s.resize(s.max_size() + 1); } catch (const std::exception& e) { capture(6, e); }
+  try { throw std::overflow_error("7 overflow"); } catch (const std::exception& e) { capture(7, e); }
+  try { throw std::underflow_error("8 underflow"); } catch (const std::exception& e) { capture(8, e); }
+  try { throw std::range_error("9 range"); } catch (const std::exception& e) { capture(9, e); }
+  try { throw std::bad_alloc(); } catch (const std::exception& e) { capture(10, e); }
+  try { struct A{virtual ~A(){}}; struct B:A{}; A* a=new A; B& b=dynamic_cast<B&>(*a); } catch (const std::exception& e) { capture(11, e); }
+  try { struct A{virtual ~A(){}}; A* a=nullptr; typeid(*a); } catch (const std::exception& e) { capture(12, e); }
+  try { throw std::regex_error(std::regex_constants::error_badrepeat); } catch (const std::exception& e) { capture(13, e); }
+  try { throw std::system_error(std::make_error_code(std::errc::invalid_argument)); } catch (const std::exception& e) { capture(14, e); }
+  try { std::promise<int> p; p.get_future(); p.get_future(); } catch (const std::exception& e) { capture(15, e); }
+  try { std::bitset<1> b; b.test(2); } catch (const std::exception& e) { capture(16, e); }
+  try { std::stoi("not a number"); } catch (const std::exception& e) { capture(17, e); }
+  try { throw DatabaseError("18 db failed"); } catch (const std::exception& e) { capture(18, e); }
+  try { throw AuthenticationError("19 auth denied"); } catch (const std::exception& e) { capture(19, e); }
+  try { throw std::ios_base::failure("20 ios failure"); } catch (const std::exception& e) { capture(20, e); }
 
-  // 3. std::invalid_argument
-  std::cout << "[3] Capturing invalid_argument...\n";
-  try {
-    throw std::invalid_argument("Provided hex code 'xyz' is not valid");
-  } catch (const std::exception &e) {
-    sdk.capture_exception(e);
-  }
-
-  // 4. std::logic_error
-  std::cout << "[4] Capturing logic_error...\n";
-  try {
-    throw std::logic_error("State machine entered undefined execution state");
-  } catch (const std::exception &e) {
-    sdk.capture_exception(e);
-  }
-
-  // 5. std::domain_error
-  std::cout << "[5] Capturing domain_error...\n";
-  try {
-    throw std::domain_error("Value -1 is outside mathematics domain for sqrt");
-  } catch (const std::exception &e) {
-    sdk.capture_exception(e);
-  }
-
-  // 6. std::length_error
-  std::cout << "[6] Capturing length_error...\n";
-  try {
-    std::string s;
-    s.resize(s.max_size() + 1); // Throws
-  } catch (const std::exception &e) {
-    sdk.capture_exception(e);
-  }
-
-  // 7. std::overflow_error
-  std::cout << "[7] Capturing overflow_error...\n";
-  try {
-    throw std::overflow_error("Buffer magnitude exceeds 64-bit bounds");
-  } catch (const std::exception &e) {
-    sdk.capture_exception(e);
-  }
-
-  // 8. Chained / Custom Error wrapper simulation
-  std::cout << "[8] Capturing general runtime_error (network)... \n";
-  try {
-    throw std::runtime_error("CURL SSL exception: Handshake aborted by peer");
-  } catch (const std::exception &e) {
-    sdk.capture_exception(e);
-  }
-
-  std::cout << "\nFlushing events asynchronously...\n";
-  // The SDK flushes natively inside its background thread block
-  std::cout << "✅ Done — C++ Test Execution Complete.\n";
+  std::cout << "\n✅ Done\n";
   return 0;
 }
