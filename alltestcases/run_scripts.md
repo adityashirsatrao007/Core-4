@@ -1,0 +1,46 @@
+# Tracelify Cross-Platform SDK Test Execution
+
+This repository holds isolated end-to-end execution scripts to test event reporting to the Tracelify backend natively.
+
+All these test suites are pre-configured to execute in the `orch` repository root or within this specific test folder. They point to the deployed sandbox Tracelify platform (`http://13.215.64.197.nip.io:8000`).
+
+## 1. Python SDK Tests
+Run the comprehensive suite capturing basic errors, DB, network, and edge case exceptions.
+
+**Run the script:**
+```bash
+# Add the project's root folder into PYTHONPATH so the SDK matches
+PYTHONPATH="../Core-4/" python test_sdk.py
+```
+
+## 2. C++ SDK Tests
+The native C++ SDK relies on shell-calling `curl` globally rather than complex CMake linkings for raw network testing.
+
+**Compile:**
+```bash
+# Specify the actual core SDK source alongside the test.
+g++ -std=c++14 -o test_cpp test_cpp.cpp ../Core-4/cpp/src/tracelify.cpp -I../Core-4/cpp/include
+```
+
+**Run:**
+```bash
+./test_cpp
+```
+
+## 3. Java SDK Tests
+The Java tester tests integration tracking via manual exceptions caught and piped to the backend.
+
+**Compile:**
+```bash
+# Uses the main compiled java classes dynamically.
+javac -cp "../Core-4/java/target/classes" TracelifyTest.java -d out
+```
+
+**Run:**
+```bash
+java -cp "out:../Core-4/java/target/classes" com.tracelify.TracelifyTest
+```
+javac -cp "../Core-4/java/target/classes" TracelifyTest.java -d out
+java -cp "out:../Core-4/java/target/classes" com.tracelify.TracelifyTest
+
+hey how are youy
