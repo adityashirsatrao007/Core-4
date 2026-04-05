@@ -62,3 +62,11 @@ kotlinc ../kotlin/src/com/tracelify/Tracelify.kt TracelifyTest.kt -include-runti
 ```bash
 java -jar test_kotlin.jar
 ```
+## 6. JavaScript SDK Tests
+Test the NodeJS SDK natively catching standard and generic unhandled exceptions.
+
+**Run:**
+```bash
+node test_js.js
+```
+
