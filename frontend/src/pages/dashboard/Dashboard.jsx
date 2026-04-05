@@ -357,7 +357,7 @@ export default function Dashboard() {
             {orgs.slice(0, 3).map((org) => (
               <button
                 key={org.id}
-                onClick={() => { setActiveOrg(org); navigate(`/orgs/${org.id}/projects`); }}
+                onClick={() => { setActiveOrg(org); }}
                 className={cn(
                   "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-all",
                   displayOrg?.id === org.id

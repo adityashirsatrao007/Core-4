@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -24,6 +24,8 @@ import { cn, getInitials } from "@/utils/helpers";
 export default function MainLayout() {
   const { user, activeOrg, setActiveOrg, logout, userRole } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isOnDashboard = location.pathname === "/dashboard";
   const [collapsed, setCollapsed] = useState(false);
   const [orgOpen, setOrgOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -71,13 +73,20 @@ export default function MainLayout() {
       >
         {/* ── Logo + toggle ── */}
         <div className="flex h-[52px] items-center gap-2 border-b border-white/[0.06] px-3 shrink-0">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600">
+          <button
+            onClick={() => navigate(isOnDashboard ? "/" : "/dashboard")}
+            title={isOnDashboard ? "Go to Landing Page" : "Go to Dashboard"}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600 hover:bg-violet-500 transition-colors"
+          >
             <Zap className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
-          </div>
+          </button>
           {!collapsed && (
-            <span className="text-[13px] font-semibold tracking-wide text-slate-100 flex-1">
+            <button
+              onClick={() => navigate(isOnDashboard ? "/" : "/dashboard")}
+              className="text-[13px] font-semibold tracking-wide text-slate-100 flex-1 text-left hover:text-violet-300 transition-colors"
+            >
               Tracelify
-            </span>
+            </button>
           )}
           <button
             onClick={() => setCollapsed((v) => !v)}
@@ -136,7 +145,7 @@ export default function MainLayout() {
                         onClick={() => {
                           setActiveOrg(org);
                           setOrgOpen(false);
-                          navigate(`/orgs/${org.id}/projects`);
+                          navigate("/dashboard");
                         }}
                         className={cn(
                           "flex w-full items-center gap-2 px-3 py-2 text-[11px] transition-colors",
